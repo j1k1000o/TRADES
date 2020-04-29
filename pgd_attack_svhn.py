@@ -23,7 +23,7 @@ parser.add_argument('--epsilon', default=0.031,
                     help='perturbation')
 parser.add_argument('--num-steps', default=20,
                     help='perturb number of steps')
-parser.add_argument('--step-size', default=0.003,
+parser.add_argument('--step-size', default=0.003, type=float,
                     help='perturb step size')
 parser.add_argument('--random',
                     default=True,
