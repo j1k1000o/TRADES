@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+import sys
 import argparse
 import torch
 import torch.nn as nn
@@ -8,8 +9,7 @@ import torchvision
 import torch.optim as optim
 from torchvision import datasets, transforms
 
-from models.wideresnet import *
-from models.resnet import *
+from models.magnet_resnet import ResNet18
 from trades import trades_loss
 
 parser = argparse.ArgumentParser(description='PyTorch SVHN TRADES Adversarial Training')
@@ -39,10 +39,14 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--model-dir', default='./model-cifar-wideResNet',
+parser.add_argument('--model-dir', required=True,
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
                     help='save frequency')
+parser.add_argument('--dataset', default='cifar10', type=str,
+                    help='dataset to train in')
+parser.add_argument('--pretrained-path', default=None, type=str,
+                    help='path to pretrained weights')
 
 args = parser.parse_args()
 
@@ -64,10 +68,33 @@ transform_train = transforms.Compose([
 transform_test = transforms.Compose([
     transforms.ToTensor(),
 ])
-trainset = torchvision.datasets.SVHN(root='../data', split='train', download=True, transform=transform_train)
-train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, **kwargs)
-testset = torchvision.datasets.SVHN(root='../data', split='test', download=True, transform=transform_test)
-test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, **kwargs)
+
+if args.dataset == 'svhn':
+    num_classes = 10
+    trainset = torchvision.datasets.SVHN(root='../data', split='train', 
+        download=True, transform=transform_train)
+    testset = torchvision.datasets.SVHN(root='../data', split='test', 
+        download=True, transform=transform_test)
+elif args.dataset == 'cifar10':
+    num_classes = 10
+    trainset = torchvision.datasets.CIFAR10(root='../data', train=True, 
+        download=True, transform=transform_train)
+    testset = torchvision.datasets.CIFAR10(root='../data', train=False, 
+        download=True, transform=transform_test)
+elif args.dataset == 'cifar100':
+    num_classes = 100
+    trainset = torchvision.datasets.CIFAR100(root='../data', train=True, 
+        download=True, transform=transform_train)
+    testset = torchvision.datasets.CIFAR100(root='../data', train=False, 
+        download=True, transform=transform_test)
+else:
+    print(f'Dataset "{args.dataset}" not implemented. Exiting...')
+    sys.exit()
+
+train_loader = torch.utils.data.DataLoader(trainset, 
+    batch_size=args.batch_size, shuffle=True, **kwargs)
+test_loader = torch.utils.data.DataLoader(testset, 
+    batch_size=args.test_batch_size, shuffle=False, **kwargs)
 
 
 def train(args, model, device, train_loader, optimizer, epoch):
@@ -147,10 +174,27 @@ def adjust_learning_rate(optimizer, epoch):
         param_group['lr'] = lr
 
 
+class MagnetModelWrapper(nn.Module):
+    def __init__(self, model):
+        super(MagnetModelWrapper, self).__init__()
+        self.model = model
+
+    def forward(self, x):
+        scores, _ = self.model(x)
+        return scores
+
+
 def main():
-    # init model, ResNet18() can be also used here for training
-    model = WideResNet().to(device)
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    model = ResNet18(num_classes=num_classes)
+    if args.pretrained_path is not None:
+        print(f'Load pretrained weights from {args.pretrained_path}', end='...')
+        ckpt = torch.load(args.pretrained_path)
+        model.load_state_dict(ckpt['state_dict'])
+        print('done.')
+
+    model = MagnetModelWrapper(model).to(device)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr, 
+        momentum=args.momentum, weight_decay=args.weight_decay)
 
     for epoch in range(1, args.epochs + 1):
         # adjust learning rate for SGD
