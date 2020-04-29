@@ -11,6 +11,8 @@ from torchvision import datasets, transforms
 from models.wideresnet import *
 from models.resnet import *
 
+from tqdm import tqdm
+
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR PGD Attack Evaluation')
 parser.add_argument('--test-batch-size', type=int, default=200, metavar='N',
@@ -120,7 +122,7 @@ def eval_adv_test_whitebox(model, device, test_loader):
     robust_err_total = 0
     natural_err_total = 0
 
-    for data, target in test_loader:
+    for data, target in tqdm(test_loader):
         data, target = data.to(device), target.to(device)
         # pgd attack
         X, y = Variable(data, requires_grad=True), Variable(target)
