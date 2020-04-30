@@ -235,7 +235,8 @@ def main():
         print(f'Train acc: {train_acc:4.3f} | Test acc: {test_acc:4.3f}')
         print('================================================================')
         # estimate PGD accuracy
-        clean_acc, pgd_acc = eval_adv_test_whitebox(model, device, test_loader)
+        clean_acc, pgd_acc = eval_adv_test_whitebox(model, device, test_loader, 
+            epsilon=8/255, num_steps=5, step_size=2/255)
         print(f'Clean acc: {clean_acc:4.3f} | (est.) PGD acc: {pgd_acc:4.3f}')
         update_log(optimizer, epoch, train_loss, train_acc, test_loss, test_acc,
             pgd_acc, log_path)

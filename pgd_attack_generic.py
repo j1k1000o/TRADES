@@ -11,16 +11,11 @@ from torchvision import datasets, transforms
 
 from models.magnet_resnet import ResNet18
 
-def _pgd_whitebox(model,
-                  X,
-                  y,
-                  epsilon=args.epsilon,
-                  num_steps=args.num_steps,
-                  step_size=args.step_size):
+def _pgd_whitebox(model, X, y, epsilon, num_steps, step_size, device):
     out = model(X)
     err = (out.data.max(1)[1] != y.data).float().sum()
     X_pgd = Variable(X.data, requires_grad=True)
-    if args.random:
+    if True:
         random_noise = torch.FloatTensor(*X_pgd.shape).uniform_(-epsilon, epsilon).to(device)
         X_pgd = Variable(X_pgd.data + random_noise, requires_grad=True)
 
@@ -37,7 +32,7 @@ def _pgd_whitebox(model,
         X_pgd = Variable(X.data + eta, requires_grad=True)
         X_pgd = Variable(torch.clamp(X_pgd, 0, 1.0), requires_grad=True)
     err_pgd = (model(X_pgd).data.max(1)[1] != y.data).float().sum()
-    print('err pgd (white-box): ', err_pgd)
+    # print('err pgd (white-box): ', err_pgd)
     return err, err_pgd
 
 
@@ -72,7 +67,7 @@ def _pgd_blackbox(model_target,
     return err, err_pgd
 
 
-def eval_adv_test_whitebox(model, device, test_loader):
+def eval_adv_test_whitebox(model, device, test_loader, epsilon, num_steps, step_size):
     """
     evaluate model by white-box attack
     """
@@ -84,7 +79,7 @@ def eval_adv_test_whitebox(model, device, test_loader):
         # pgd attack
         X, y = Variable(data, requires_grad=True), Variable(target)
         n_total += X.size(0) # batch size
-        err_natural, err_robust = _pgd_whitebox(model, X, y)
+        err_natural, err_robust = _pgd_whitebox(model, X, y, epsilon, num_steps, step_size, device)
         robust_err_total += err_robust
         natural_err_total += err_natural
     
