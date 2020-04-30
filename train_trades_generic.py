@@ -11,6 +11,25 @@ from torchvision import datasets, transforms
 
 from models.magnet_resnet import ResNet18
 from trades import trades_loss
+from pgd_attack_generic import eval_adv_test_whitebox
+
+def print_to_log(text, txt_file_path):
+    with open(txt_file_path, 'a') as text_file:
+        print(text, file=text_file)
+
+def update_log(optimizer, epoch, train_loss, train_acc, test_loss, test_acc,
+        pgd_acc, log_path):
+    lr = get_lr(optimizer)
+    print_to_log(
+        f'{epoch+1}\t {lr:1.0E}\t {train_loss:5.4f} \t '
+        f'{train_acc:4.3f}\t\t {test_loss:5.4f}\t {test_acc:4.3f}\t\t '
+        f'{pgd_acc:4.3f}',
+        log_path
+    )
+
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group['lr']
 
 parser = argparse.ArgumentParser(description='PyTorch SVHN TRADES Adversarial Training')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
@@ -58,6 +77,12 @@ use_cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
 device = torch.device("cuda" if use_cuda else "cpu")
 kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
+
+# Logging stuff
+log_path = os.path.join(model_dir, 'log.txt')
+log_headers = ['Epoch', 'LR', 'Train loss', 'Train acc.', 'Test loss', \
+        'Test acc.', 'PGD acc.']
+print_to_log('\t '.join(log_headers), log_path)
 
 # setup data loader
 transform_train = transforms.Compose([
@@ -205,16 +230,20 @@ def main():
 
         # evaluation on natural examples
         print('================================================================')
-        eval_train(model, device, train_loader)
-        eval_test(model, device, test_loader)
+        train_loss, train_acc = eval_train(model, device, train_loader)
+        test_loss, test_acc = eval_test(model, device, test_loader)
+        print(f'Train acc: {train_acc:4.3f} | Test acc: {test_acc:4.3f}')
         print('================================================================')
+        # estimate PGD accuracy
+        clean_acc, pgd_acc = eval_adv_test_whitebox(model, device, test_loader)
+        print(f'Clean acc: {clean_acc:4.3f} | (est.) PGD acc: {pgd_acc:4.3f}')
+        update_log(optimizer, epoch, train_loss, train_acc, test_loss, test_acc,
+            pgd_acc, log_path)
 
         # save checkpoint
         if epoch % args.save_freq == 0:
             torch.save(model.state_dict(),
-                       os.path.join(model_dir, 'model-wideres-epoch{}.pt'.format(epoch)))
-            torch.save(optimizer.state_dict(),
-                       os.path.join(model_dir, 'opt-wideres-checkpoint_epoch{}.tar'.format(epoch)))
+                       os.path.join(model_dir, f'model-wideres-epoch{epoch}.pt'))
 
 
 if __name__ == '__main__':
