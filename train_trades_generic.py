@@ -209,14 +209,25 @@ class MagnetModelWrapper(nn.Module):
         return scores
 
 
+def copy_pretrained_model(model, path):
+    resnet = torch.load(path, map_location='cpu')
+    keys = list(resnet.keys())
+    count = 0
+    for key in model.state_dict().keys():
+        model.state_dict()[key].copy_(resnet[keys[count]].data)
+        count +=1
+    
+    print('Pretrained model is loaded successfully')
+    return model
+
+
 def main():
     model = ResNet18(num_classes=num_classes)
     if args.pretrained_path is not None:
         print(f'Load pretrained weights from {args.pretrained_path}', end='...')
-        ckpt = torch.load(args.pretrained_path, map_location='cpu')
-        model.load_state_dict(ckpt['state_dict'])
+        model = copy_pretrained_model(model, args.pretrained_path)
         print('done.')
-
+    
     model = MagnetModelWrapper(model).to(device)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, 
         momentum=args.momentum, weight_decay=args.weight_decay)
