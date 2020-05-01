@@ -213,7 +213,7 @@ def main():
     model = ResNet18(num_classes=num_classes)
     if args.pretrained_path is not None:
         print(f'Load pretrained weights from {args.pretrained_path}', end='...')
-        ckpt = torch.load(args.pretrained_path)
+        ckpt = torch.load(args.pretrained_path, map_location='cpu')
         model.load_state_dict(ckpt['state_dict'])
         print('done.')
 
