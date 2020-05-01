@@ -22,7 +22,7 @@ def update_log(optimizer, epoch, train_loss, train_acc, test_loss, test_acc,
     lr = get_lr(optimizer)
     print_to_log(
         f'{epoch+1}\t {lr:1.0E}\t {train_loss:5.4f} \t '
-        f'{train_acc:4.3f}\t\t {test_loss:5.4f}\t {test_acc:4.3f}\t\t '
+        f'{train_acc:4.3f}\t\t {test_loss:5.4f}\t\t {test_acc:4.3f}\t\t '
         f'{pgd_acc:4.3f}',
         log_path
     )
