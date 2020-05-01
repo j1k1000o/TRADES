@@ -232,13 +232,13 @@ def main():
         print('================================================================')
         train_loss, train_acc = eval_train(model, device, train_loader)
         test_loss, test_acc = eval_test(model, device, test_loader)
-        print(f'Train acc: {train_acc:4.3f} | Test acc: {test_acc:4.3f}')
+        print(f'Train acc: {100.*train_acc:4.3f} | Test acc: {100.*test_acc:4.3f}')
         print('================================================================')
         # estimate PGD accuracy
         clean_acc, pgd_acc = eval_adv_test_whitebox(model, device, test_loader, 
             epsilon=8/255, num_steps=5, step_size=2/255)
         print(f'Clean acc: {clean_acc:4.3f} | (est.) PGD acc: {pgd_acc:4.3f}')
-        update_log(optimizer, epoch, train_loss, train_acc, test_loss, test_acc,
+        update_log(optimizer, epoch, train_loss, 100.*train_acc, test_loss, 100.*test_acc,
             pgd_acc, log_path)
 
         # save checkpoint
