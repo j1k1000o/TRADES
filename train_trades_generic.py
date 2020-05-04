@@ -234,7 +234,7 @@ def main():
     if args.resume_net is not None:
         print(f'Resuming net from {args.resume_net}', end='... ')
         ckpt = torch.load(args.resume_net)
-        model = model.load_state_dict(ckpt)
+        model.load_state_dict(ckpt)
         print('done.')
     
     optimizer = optim.SGD(model.parameters(), lr=args.lr, 
