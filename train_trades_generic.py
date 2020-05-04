@@ -66,6 +66,8 @@ parser.add_argument('--dataset', default='cifar10', type=str,
                     help='dataset to train in')
 parser.add_argument('--pretrained-path', default=None, type=str,
                     help='path to pretrained weights')
+parser.add_argument('--resume-net', default=None, type=str,
+                    help='path for resuming training')
 
 args = parser.parse_args()
 
@@ -224,11 +226,17 @@ def copy_pretrained_model(model, path):
 def main():
     model = ResNet18(num_classes=num_classes)
     if args.pretrained_path is not None:
-        print(f'Load pretrained weights from {args.pretrained_path}', end='...')
+        print(f'Load pretrained weights from {args.pretrained_path}', end='...' )
         model = copy_pretrained_model(model, args.pretrained_path)
         print('done.')
     
     model = MagnetModelWrapper(model).to(device)
+    if args.resume_net is not None:
+        print(f'Resuming net from {args.resume_net}', end='... ')
+        ckpt = torch.load(args.resume_net)
+        model = model.load_state_dict(ckpt)
+        print('done.')
+    
     optimizer = optim.SGD(model.parameters(), lr=args.lr, 
         momentum=args.momentum, weight_decay=args.weight_decay)
 
