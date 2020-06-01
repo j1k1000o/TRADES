@@ -32,18 +32,18 @@ def get_lr(optimizer):
         return param_group['lr']
 
 parser = argparse.ArgumentParser(description='PyTorch SVHN TRADES Adversarial Training')
-parser.add_argument('--batch-size', type=int, default=128, metavar='N',
+parser.add_argument('--batch-size', type=int, default=256, metavar='N',
                     help='input batch size for training (default: 128)')
-parser.add_argument('--test-batch-size', type=int, default=128, metavar='N',
+parser.add_argument('--test-batch-size', type=int, default=64, metavar='N',
                     help='input batch size for testing (default: 128)')
-parser.add_argument('--epochs', type=int, default=76, metavar='N',
+parser.add_argument('--epochs', type=int, default=90, metavar='N',
                     help='number of epochs to train')
-parser.add_argument('--weight-decay', '--wd', default=2e-4,
-                    type=float, metavar='W')
-parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
+# parser.add_argument('--weight-decay', '--wd', default=2e-4,
+#                     type=float, metavar='W')
+parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
                     help='learning rate')
-parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
-                    help='SGD momentum')
+# parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
+#                     help='SGD momentum')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
 parser.add_argument('--epsilon', default=0.031,
@@ -191,9 +191,9 @@ def eval_test(model, device, test_loader):
 def adjust_learning_rate(optimizer, epoch):
     """decrease the learning rate"""
     lr = args.lr
-    if epoch >= 75:
+    if epoch >= 30:
         lr = args.lr * 0.1
-    if epoch >= 90:
+    if epoch >= 60:
         lr = args.lr * 0.01
     if epoch >= 100:
         lr = args.lr * 0.001
@@ -237,8 +237,9 @@ def main():
         model.load_state_dict(ckpt)
         print('done.')
     
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, 
-        momentum=args.momentum, weight_decay=args.weight_decay)
+    # optimizer = optim.SGD(model.parameters(), lr=args.lr, 
+    #     momentum=args.momentum, weight_decay=args.weight_decay)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     for epoch in range(1, args.epochs + 1):
         # adjust learning rate for SGD
