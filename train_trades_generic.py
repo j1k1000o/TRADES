@@ -10,7 +10,7 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 
 from models.magnet_resnet import ResNet18
-from trades import trades_loss
+from qtrades import trades_loss
 from pgd_attack_generic import eval_adv_test_whitebox
 
 def print_to_log(text, txt_file_path):
@@ -48,11 +48,11 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
 parser.add_argument('--epsilon', default=0.031,
                     help='perturbation')
-parser.add_argument('--num-steps', default=10,
+parser.add_argument('--num-steps', default=1,
                     help='perturb number of steps')
-parser.add_argument('--step-size', default=0.007,
+parser.add_argument('--step-size', default=10.0/255.,
                     help='perturb step size')
-parser.add_argument('--beta', default=6.0,
+parser.add_argument('--beta', default=1.0,
                     help='regularization, i.e., 1/lambda in TRADES')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
@@ -266,7 +266,7 @@ def main():
         # save checkpoint
         if epoch % args.save_freq == 0:
             torch.save(model.state_dict(),
-                       os.path.join(model_dir, f'model-wideres-epoch{epoch}.pt'))
+                       os.path.join(model_dir, f'model-resnet18-epoch{epoch}.pt'))
 
 
 if __name__ == '__main__':
